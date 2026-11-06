@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Alunos</title>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --background: #f8fafc;
+            --text-color: #334155;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            color: #1e293b;
+            margin-0: 0;
+        }
+
+        /* Grid de Cards */
+        .grid-alunos {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Estilização do Card */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+        }
+
+        .card-header {
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .aluno-nome {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 0;
+        }
+
+        .aluno-id {
+            font-size: 0.85rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .card-body p {
+            margin: 0.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        .label {
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        /* Estados de erro e carregamento */
+        .loading,
+        .error {
+            text-align: center;
+            font-size: 1.2rem;
+            padding: 2rem;
+            grid-column: 1 / -1;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Painel de Alunos</h1>
+        </header>
+
+        <div id="lista-alunos" class="grid-alunos">
+            <div class="loading">Carregando dados dos alunos...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://192.168.206.100:8080/alunos/listar';
+
+        // Função para formatar a data de nascimento para padrão brasileiro
+        function formatarData(dataString) {
+            if (!dataString) return 'Não informada';
+            const data = new Date(dataString);
+            return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+        }
+
+        // Função para formatar CPF basico (xxx.xxx.xxx-xx)
+        function formatarCPF(cpf) {
+            if (!cpf) return 'Não informado';
+            // Garante que tem 11 dígitos preenchendo com zeros à esquerda se necessário
+            const cpfLimpo = cpf.padStart(11, '0');
+            return cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "\$1.\$2.\$3-\$4");
+        }
+
+        async function buscarAlunos() {
+            const container = document.getElementById('lista-alunos');
+
+            try {
+                const response = await fetch(API_URL);
+
+                if (!response.ok) {
+                    throw new Error('Erro ao buscar dados do servidor');
+                }
+
+                const alunos = await response.json();
+                container.innerHTML = ''; // Limpa o loading
+
+                if (alunos.length === 0) {
+                    container.innerHTML = '<div class="loading">Nenhum aluno encontrado.</div>';
+                    return;
+                }
+
+                // Renderiza cada aluno em um card estruturado
+                alunos.forEach(aluno => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <span class="aluno-id">ID #${aluno.idAluno}</span>
+                            <h2 class="aluno-nome">${aluno.nome}</h2>
+                        </div>
+                        <div class="card-body">
+                            <p><span class="label">CPF:</span> ${formatarCPF(aluno.cpf)}</p>
+                            <p><span class="label">E-mail:</span> ${aluno.email || 'Não informado'}</p>
+                            <p><span class="label">Nascimento:</span> ${formatarData(aluno.dataNasc)}</p>
+                            <p><span class="label">Altura:</span> ${aluno.altura ? aluno.altura + ' m' : '---'}</p>
+                            <p><span class="label">Peso:</span> ${aluno.peso ? aluno.peso + ' kg' : '---'}</p>
+                            <p><span class="label">Telefone:</span> ${aluno.tel || 'Não informado'}</p>
+                        </div>
+                    `;
+
+                    container.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = `
+                    <div class="error">
+                        <p>Não foi possível carregar os alunos.</p>
+                        <small>Verifique se a API está rodando e se o CORS está ativo.</small>
+                    </div>
+                `;
+            }
+        }
+
+        // Executa a busca ao carregar a página
+        buscarAlunos();
+    </script>
+</body>
+
+</html>

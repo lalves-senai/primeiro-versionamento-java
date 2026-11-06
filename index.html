@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Crete account</title>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <div class="headerText">
+                <h1>Dados de Cadastro</h1>
+            </div>
+        </div>
+
+        <div id="formulario">
+            <form action="" method="get" class="formulario">
+                <div class="campoDuplo">
+                    <div>
+                        <label for="nome">Nome</label>
+                        <input type="text" name="nome" id="nome" placeholder="Nome Completo">
+                    </div>
+                    <div>
+                        <label for="email">E-mail</label>
+                        <input type="email" name="email" id="email" placeholder="E-mail">
+                    </div>
+                </div>
+
+                <div class="campoDuplo">
+                    <div>
+                        <label for="senha">Senha</label>
+                        <input type="text" name="senha" id="senha" placeholder="Senha">
+                    </div>
+
+                    <div>
+                        <label for="confirmarSenha">Senha</label>
+                        <input type="text" name="confirmarSenha" id="confirmarSenha" placeholder="Confirme a senha">
+                    </div>
+
+                </div>
+
+                <div class="campoDuplo">
+                    <div>
+                        <label for="dataNasc">Nascimento</label>
+                        <input type="date" name="dataNasc" id="dataNasc" placeholder="Data de Nascimento">
+                    </div>
+                    <div>
+                        <label for="contato"> Telefone </label>
+                        <input type="text" name="contato" id="contato" placeholder="(00) 00000-0000" maxlength="15">
+                    </div>
+
+                </div>
+
+                <div class="endereco">
+                    <h4>Endereço</h4>
+                    <div class="campoDuplo">
+                        <div>
+                            <label for="cep">Informe o CEP</label>
+                            <input type="text" name="cep" id="cep" placeholder="00000-000" maxlength="9">
+                        </div>
+                        <div>
+                            <label for="rua">Informe o Endereço</label>
+                            <input type="text" name="rua" id="rua" placeholder="Informe o Endereço">
+                        </div>
+                    </div>
+
+                    <div class="campoDuplo">
+                        <div>
+                            <label for="numero">Número do endereço</label>
+                            <input type="number" name="numero" id="numero" placeholder="Número">
+                        </div>
+                        <div>
+                            <label for="estado">Estado</label>
+                            <input type="text" name="estado" id="estado" placeholder="Estado">
+                        </div>
+
+
+                    </div>
+                    <div class="campoDuplo">
+
+                        <div>
+                            <label for="bairro">Bairro</label>
+                            <input type="text" name="bairro" id="bairro" placeholder="Bairro">
+                        </div>
+                        <div>
+                            <label for="cidade">Cidade</label>
+                            <input type="text" name="cidade" id="cidade" placeholder="Bairro">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="complemento">Complemento</label>
+                        <input type="text" name="complemento" id="complemento" placeholder="Complemento">
+                    </div>
+
+                    <div class="entrar">
+                        <button onclick="login()">Cadastrar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+
+        const inputTelefone = document.getElementById('contato');
+        inputTelefone.addEventListener('input', (event) => {
+            let valor = event.target.value;
+
+            valor = valor.replace(/\D/g, "");
+
+            if (valor.length > 0) {
+                valor = "(" + valor;
+            }
+            if (valor.length > 3) {
+                valor = valor.slice(0, 3) + ") " + valor.slice(3);
+            }
+            if (valor.length > 9) {
+                if (valor.length === 15) {
+                    valor = valor.slice(0, 10) + "-" + valor.slice(10);
+                } else {
+                    valor = valor.slice(0, 9) + "-" + valor.slice(9);
+                }
+            }
+
+            event.target.value = valor.slice(0, 15);
+        });
+
+        document.getElementById('cep').addEventListener('blur', async (event) => {
+            const cep = event.target.value.replace(/\D/g, "");
+
+            if (cep.length !== 8) return;
+
+            const url = `https://viacep.com.br/ws/${cep}/json/`;
+
+            const campoRua = document.getElementById('rua');
+            const campoBairro = document.getElementById('bairro');
+            const campoCidade = document.getElementById('cidade');
+            const campoEstado = document.getElementById('estado');
+
+            try {
+                const resposta = await fetch(url);
+                const dados = await resposta.json();
+
+                if (dados.erro) {
+                    alert("CEP não encontrado!");
+                    limparCamposEndereco();
+                    configurarBloqueioCampos(false, campoRua, campoBairro, campoCidade, campoEstado);
+                    return;
+                }
+
+                campoRua.value = dados.logradouro;
+                campoBairro.value = dados.bairro;
+                campoCidade.value = dados.localidade;
+                campoEstado.value = dados.uf;
+
+                configurarBloqueioCampos(true, campoRua, campoBairro, campoCidade, campoEstado);
+
+
+                document.getElementById('numero').focus();
+
+            } catch (erro) {
+                console.error("Erro ao buscar o CEP:", erro);
+                alert("Erro ao buscar o CEP. Digite os dados manualmente.");
+                configurarBloqueioCampos(false, campoRua, campoBairro, campoCidade, campoEstado);
+            }
+        });
+
+        function configurarBloqueioCampos(bloquear, ...campos) {
+            campos.forEach(campo => {
+                campo.readOnly = bloquear;
+                if (bloquear) {
+                    campo.classList.add('campo-travado');
+                } else {
+                    campo.classList.remove('campo-travado');
+                }
+            });
+        }
+
+        function limparCamposEndereco() {
+            document.getElementById('rua').value = "";
+            document.getElementById('bairro').value = "";
+            document.getElementById('cidade').value = "";
+            document.getElementById('estado').value = "";
+        }
+    </script>
+</body>
+
+</html>
